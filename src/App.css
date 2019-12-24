@@ -1,0 +1,43 @@
+body {
+   padding: 10px 10px 10px 10px;
+   font-family: "HelveticaNeue";
+   min-height: 100vh;
+}
+
+#root, .container {
+   min-height: 100vh;
+}
+
+canvas {
+   border: 1px solid #bdc3c7;
+   margin: 10px 0px 0px 0px;
+   /*  background-image: url("images/bg.png"); */
+}
+
+.myFile {
+   position: relative;
+   overflow: hidden;
+   float: left;
+   clear: left;
+}
+
+.myFile input[type="file"] {
+   display: block;
+   position: absolute;
+   top: 0;
+   right: 0;
+   opacity: 0;
+   font-size: 30px;
+   filter: alpha(opacity=0);
+}
+
+.browseFile input[type="file"] {
+   display: block;
+   position: absolute;
+   top: 0;
+   right: 0;
+   opacity: 0;
+   font-size: 30px;
+   filter: alpha(opacity=0);
+}
+
