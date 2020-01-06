@@ -31,12 +31,121 @@ class App extends React.Component {
       // set canvas size
       canvas.setWidth(whiteBoardWidth);
       canvas.setHeight(whiteBoardHeight);
-    })
+      this.renderCanvasEvents();
+    });
+  }
+
+
+  renderCanvasEvents = () => {
+    let origX = '';
+    let origY = '';
+
+    const { canvas } = this.state;
+    canvas.on('mouse:down', (o) => {
+      this.setState({
+        isDown: true
+      }, () => {
+
+        // get mouse current position
+        let pointer = canvas.getPointer(o.e);
+        origX = pointer.x;
+        origY = pointer.y;
+        // call shapes render function accoording to drawingTool
+        let currentObject = this.drawRectangle(canvas, o.e, origX, origY);
+        if (currentObject) {
+          this.setState({
+            currentObject: currentObject
+          })
+        }
+      });
+    });
+
+    canvas.on('mouse:move', (o) => {
+      if (!this.state.isDown)
+        return;
+      if (this.state.currentObject) {
+        this.drawRectangle(canvas, o.e, origX, origY);
+      }
+    });
+    canvas.on('mouse:up', (o) => {
+      this.setState({
+        isDown: false,
+        currentObject: ''
+      });
+    });
+  }
+
+  drawRectangle = (canvas, event, origX, origY) => {
+    let currentObject = ''
+    let pointer = canvas.getPointer(event);
+    if (this.state.currentObject) {
+
+
+      console.log(event.target);
+
+
+      var obj = this.state.currentObject;
+      // if object is too big ignore
+      if (obj.getScaledHeight() > obj.canvas.height || obj.getScaledWidth() > obj.canvas.width) {
+        return;
+      }
+      obj.setCoords();
+      // top-left  corner
+      if (obj.getBoundingRect().top < 0 || obj.getBoundingRect().left < 0) {
+        obj.top = Math.max(obj.top, obj.top - obj.getBoundingRect().top);
+        obj.left = Math.max(obj.left, obj.left - obj.getBoundingRect().left);
+      }
+      // bot-right corner
+      if (obj.getBoundingRect().top + obj.getBoundingRect().height > obj.canvas.height || obj.getBoundingRect().left + obj.getBoundingRect().width > obj.canvas.width) {
+        obj.top = Math.min(obj.top, obj.canvas.height - obj.getBoundingRect().height + obj.top - obj.getBoundingRect().top);
+        obj.left = Math.min(obj.left, obj.canvas.width - obj.getBoundingRect().width + obj.left - obj.getBoundingRect().left);
+      }
+
+
+      // code for update selected Rectangle
+      if (origX > pointer.x) {
+        this.state.currentObject.set({
+          left: Math.abs(pointer.x)
+        });
+      }
+      if (origY > pointer.y) {
+        this.state.currentObject.set({
+          top: Math.abs(pointer.y)
+        });
+      }
+      this.state.currentObject.set({
+        width: Math.abs(origX - pointer.x)
+      });
+      this.state.currentObject.set({
+        height: Math.abs(origY - pointer.y)
+      });
+      this.setState({
+        x1: origX,
+        y1: origY,
+        x2: pointer.x,
+        y2: pointer.y,
+      })
+      // code for update selected Rectangle
+    } else {
+      currentObject = new fabric.Rect({
+        left: origX,
+        top: origY,
+        width: pointer.x - origX,
+        height: pointer.y - origY,
+        selectable: false,
+        fill: 'transparent',
+        stroke: 'red',
+        strokeWidth: 5,
+      });
+      canvas.add(currentObject);
+    }
+    canvas.renderAll();
+    return currentObject;
   }
 
   addByPoint = () => {
-    let { canvas, x1, y1, x2, y2, img } = this.state;
-    if (x1 > 9 && y1 > 9 && x2 > 9 && y2 > 9 && img != '') {
+    let { canvas, x1, y1, x2, y2, } = this.state;
+    if (x1 > 9 && y1 > 9 && x2 > 9 && y2 > 9) {
       let left = x1;
       let top = y1;
       let width = 0;
@@ -50,56 +159,59 @@ class App extends React.Component {
       width = Math.abs(x1 - x2);
       height = Math.abs(y1 - y2);
       // add an image
-      fabric.Image.fromURL(img, (myImg) => {
-        let img = myImg.set({
-          left: left,
-          top: top,
-          selectable: false,
-          scaleX: width / myImg.width,
-          scaleY: height / myImg.height,
-        });
-        canvas.add(img);
+
+      let currentObject = new fabric.Rect({
+        left: left,
+        top: top,
+        width: width,
+        height: height,
+        selectable: false,
+        fill: 'transparent',
+        stroke: 'red',
+        strokeWidth: 5,
       });
+      canvas.add(currentObject);
+
 
       // show x1 cord on image
-      let text1 = new fabric.IText(`x1:${x1.toString()}`, {
-        left: x1,
-        top: y1 - 10,
-        selectable: false,
-        fontFamily: 'Times New Roman',
-        fontSize: 10,
-      })
-      canvas.add(text1);
+      // let text1 = new fabric.IText(`x1:${x1.toString()}`, {
+      //   left: x1,
+      //   top: y1 - 10,
+      //   selectable: false,
+      //   fontFamily: 'Times New Roman',
+      //   fontSize: 10,
+      // })
+      // canvas.add(text1);
 
       // show y1 cord on image
-      let text2 = new fabric.IText(`y1:${y1.toString()}`, {
-        left: (x1 + width) - 10,
-        top: y1 - 10,
-        selectable: false,
-        fontFamily: 'Times New Roman',
-        fontSize: 10,
-      })
-      canvas.add(text2);
+      // let text2 = new fabric.IText(`y1:${y1.toString()}`, {
+      //   left: (x1 + width) - 10,
+      //   top: y1 - 10,
+      //   selectable: false,
+      //   fontFamily: 'Times New Roman',
+      //   fontSize: 10,
+      // })
+      // canvas.add(text2);
 
       // show x2 cord on image
-      let text3 = new fabric.IText(`x2:${x2.toString()}`, {
-        left: x1,
-        top: (y1 + height),
-        selectable: false,
-        fontFamily: 'Times New Roman',
-        fontSize: 10,
-      })
-      canvas.add(text3);
+      // let text3 = new fabric.IText(`x2:${x2.toString()}`, {
+      //   left: x1,
+      //   top: (y1 + height),
+      //   selectable: false,
+      //   fontFamily: 'Times New Roman',
+      //   fontSize: 10,
+      // })
+      // canvas.add(text3);
 
       // show y2 cord on image
-      let text4 = new fabric.IText(`y2:${y2.toString()}`, {
-        left: x1 + width - 10,
-        top: (y1 + height),
-        selectable: false,
-        fontFamily: 'Times New Roman',
-        fontSize: 10,
-      })
-      canvas.add(text4);
+      // let text4 = new fabric.IText(`y2:${y2.toString()}`, {
+      //   left: x1 + width - 10,
+      //   top: (y1 + height),
+      //   selectable: false,
+      //   fontFamily: 'Times New Roman',
+      //   fontSize: 10,
+      // })
+      // canvas.add(text4);
 
       canvas.renderAll();
       this.setState({
@@ -107,7 +219,7 @@ class App extends React.Component {
         y1: '',
         x2: '',
         y2: '',
-        img: ''
+
       });
       document.getElementById("cordForm").reset();
       document.getElementById("fileInputId").value = null;
@@ -120,9 +232,20 @@ class App extends React.Component {
     let reader = new FileReader();
     reader.onload = (f) => {
       let data = f.target.result;
+
+      fabric.Image.fromURL(data, (img) => {
+        // add background image
+        this.state.canvas.setBackgroundImage(img, this.state.canvas.renderAll.bind(this.state.canvas), {
+          // scaleX: this.state.canvas.width / img.width,
+          // scaleY: this.state.canvas.height / img.height
+        });
+        this.state.canvas.setWidth(img.width);
+        this.state.canvas.setHeight(img.height);
+      });
+
       this.setState({
         img: data
-      })
+      });
     };
     reader.readAsDataURL(file);
   }
